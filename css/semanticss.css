@@ -1,0 +1,157 @@
+:root {
+  /* ╭───────────────────────────────╮ */
+  /* │            Colors             │ */
+  /* ╰───────────────────────────────╯ */
+  --color-accent: #9e7b42;        /* main accent */
+  --color-secondary: #2a2a2a;     /* secondary tone */
+  --color-tertiary: #f0e8db;      /* tertiary / background */
+
+  /* ╭───────────────────────────────╮ */
+  /* │            Shadows            │ */
+  /* ╰───────────────────────────────╯ */
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  /* ╭───────────────────────────────╮ */
+  /* │            Font               │ */
+  /* ╰───────────────────────────────╯ */
+  --font-interactive-family: sans-serif;
+  --font-typography-family: serif;
+  --font-size: 16px;
+  font-size: var(--font-size);
+
+  /* ╭───────────────────────────────╮ */
+  /* │            Disaplay           │ */
+  /* ╰───────────────────────────────╯ */
+  --max-mobile-width: 600px;
+  --min-tablet-width: 601px;
+  --max-tablet-width: 1024px;
+}
+
+/* ╭───────────────────────────────╮ */
+/* │          Global Reset         │ */
+/* ╰───────────────────────────────╯ */
+
+/* Universal box-sizing reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Remove all default margins and paddings */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100%;
+  min-height: 100%;
+}
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+web-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: var(--max-tablet-width);
+}
+web-page > header {
+
+}
+web-page > main {
+
+}
+web-page > footer {
+
+}
+web-page > header > nav {
+  
+}
+web-page > main column-section {
+
+}
+web-page > main row-section {
+
+}
+web-page > main aside {
+
+}
+
+p {}
+hr {}
+br {}
+pre {}
+blockquote {}
+
+h1 {}
+h2 {}
+h3 {}
+h4 {}
+h5 {}
+h6 {}
+
+strong {}
+em {}
+small {}
+cite {}
+q {}
+dfn {}
+abbr {}
+time {}
+var {}
+kbd {}
+samp {}
+code {}
+mark {}
+sup {}
+sub {}
+i {}
+b {}
+u {}
+s {}
+bdi {}
+bdo {}
+
+ul {}
+ol {}
+li {}
+dl {}
+dt {}
+dd {}
+
+table {}
+thead {}
+tbody {}
+tfoot {}
+tr {}
+td {}
+th {}
+caption {}
+col {}
+colgroup {}
+
+a {}
+
+figure {}
+figcaption {}
+
+address {}
+
+/* ╭──────────────────────────────────────────────╮ */
+/* │                 Mobile Styles                │ */
+/* ╰──────────────────────────────────────────────╯ */
+
+@media (max-width: 600px) {
+
+}
+
+/* ╭──────────────────────────────────────────────╮ */
+/* │                 Tablet (iPad)                │ */
+/* ╰──────────────────────────────────────────────╯ */
+@media (min-width: 601px) and (max-width: 1024px) {
+
+}
+

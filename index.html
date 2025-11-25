@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <title>EHTML</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="EHTML (or Extended HTML) can be described as a set of custom elements that you can place on an HTML page for different purposes and use cases. The goal of this library is to provide a convenient way to eliminate JavaScript code on the client side as much as possible for basic and routine tasks. The biggest focus of this library is to offer the easiest way to perform **AJAX** operations just by using HTML. Also EHTML treat your HTML code code not only as a markup language but also as a templating language.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/image/favicon.ico"/>
+    <link rel="preload" href="/html/main-page-template.html" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/md/index.md" as="fetch" crossorigin="anonymous" />
+    <link rel="stylesheet" href="/css/normalize.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/highlights.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "#ehtml/": "/js/ehtml/",
+          "#ehtml/main": "/js/ehtml/main.js?v=1a6f54c9"
+        }
+      }
+    </script>
+    <script type="module">import "#ehtml/main"</script>
+    <script type="module">import "/js/youtube.js"</script>
+    <script type="text/javascript" src="/js/utils.js"></script>
+  </head>
+  <body>
+    <template
+      is="e-wrapper"
+      data-src="/html/main-page-template.html"
+      data-where-to-place="main"
+      data-how-to-place="inside">
+      hi
+    </template>
+  </body>
+</html>
