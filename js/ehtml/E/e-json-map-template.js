@@ -1,27 +1,32 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js'
-import evaluateStringWithActionsOnProgress from '#ehtml/evaluateStringWithActionsOnProgress.js'
-import mapToTemplate from '#ehtml/actions/mapToTemplate.js?v=e290e08b'
-import templateTriggerEventListener from '#ehtml/templateTriggerEventListener.js'
-import scrollToHash from '#ehtml/actions/scrollToHash.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js?v=b4193065'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=01fa3e7e'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
+import evaluateActionsOnProgress from '#ehtml/evaluateActionsOnProgress.js?v=c7f83d7b'
+import mapToTemplate from '#ehtml/actions/mapToTemplate.js?v=735f9456'
+import templateTriggerEventListener from '#ehtml/templateTriggerEventListener.js?v=5b49af76'
+import scrollToHash from '#ehtml/actions/scrollToHash.js?v=e7d61ab5'
 
 export default class EJsonMapTemplate extends HTMLTemplateElement {
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
-    this.addEventListener('ehtml:template-triggered', this.onTrigger)
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
+    this.addEventListener('ehtml:template-triggered', this.onEHTMLTemplateTriggered)
   }
 
-  onActivated() {
-    if (this.activated) {
+  disconnectedCallback() {
+    this.removeEventListener('ehtml:template-triggered', this.onEHTMLTemplateTriggered)
+  }
+
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 
@@ -47,7 +52,7 @@ export default class EJsonMapTemplate extends HTMLTemplateElement {
     // ---------------------------------------------------------
     const socketName = this.getAttribute('data-socket')
     if (socketName) {
-      const sockets = window.__ehtmlWebSockets__
+      const sockets = window.__EHTML_WEB_SOCKETS__
       if (!sockets || !sockets[socketName]) {
         throw new Error(`socket with name "${socketName}" is not defined or not opened yet`)
       }
@@ -66,9 +71,10 @@ export default class EJsonMapTemplate extends HTMLTemplateElement {
     // PROGRESS START
     // ---------------------------------------------------------
     if (this.hasAttribute('data-actions-on-progress-start')) {
-      evaluateStringWithActionsOnProgress(
+      evaluateActionsOnProgress(
         this.getAttribute('data-actions-on-progress-start'),
-        this
+        this,
+        state
       )
     }
 
@@ -85,12 +91,10 @@ export default class EJsonMapTemplate extends HTMLTemplateElement {
       this
     )
 
-    const headers = JSON.parse(
-      evaluatedStringWithParamsFromState(
-        this.getAttribute('data-request-headers') || '{}',
-        state,
-        this
-      )
+    const headers = evaluatedValueWithParamsFromState(
+      this.getAttribute('data-request-headers') || '${{}}',
+      state,
+      this
     )
 
     responseFromAjaxRequest(
@@ -131,9 +135,10 @@ export default class EJsonMapTemplate extends HTMLTemplateElement {
         })
 
         if (this.hasAttribute('data-actions-on-progress-end')) {
-          evaluateStringWithActionsOnProgress(
+          evaluateActionsOnProgress(
             this.getAttribute('data-actions-on-progress-end'),
-            this
+            this,
+            state
           )
         }
 
@@ -142,7 +147,7 @@ export default class EJsonMapTemplate extends HTMLTemplateElement {
     )
   }
 
-  onTrigger(event) {
+  onEHTMLTemplateTriggered(event) {
     const template = event?.target ?? this
     const state = event?.detail?.state ?? getNodeScopedState(this)
 

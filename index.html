@@ -1,35 +1,134 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
   <head>
-    <title>EHTML</title>
+    <title>semantiCSS</title>
     <meta charset="UTF-8">
     <meta name="description" content="EHTML (or Extended HTML) can be described as a set of custom elements that you can place on an HTML page for different purposes and use cases. The goal of this library is to provide a convenient way to eliminate JavaScript code on the client side as much as possible for basic and routine tasks. The biggest focus of this library is to offer the easiest way to perform **AJAX** operations just by using HTML. Also EHTML treat your HTML code code not only as a markup language but also as a templating language.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="/image/favicon.ico"/>
-    <link rel="preload" href="/html/main-page-template.html" as="fetch" crossorigin="anonymous" />
-    <link rel="preload" href="/md/index.md" as="fetch" crossorigin="anonymous" />
-    <link rel="stylesheet" href="/css/normalize.css">
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/highlights.css">
+    <link rel="stylesheet" href="/css/semanticss.css">
     <script type="importmap">
       {
         "imports": {
           "#ehtml/": "/js/ehtml/",
-          "#ehtml/main": "/js/ehtml/main.js?v=1a6f54c9"
+          "#ehtml/main": "/js/ehtml/main.js?v=1a6f54c9",
+          "#s-style-theme": "/js/s-style-theme.js"
         }
       }
     </script>
     <script type="module">import "#ehtml/main"</script>
-    <script type="module">import "/js/youtube.js"</script>
-    <script type="text/javascript" src="/js/utils.js"></script>
+    <script type="module">import "#s-style-theme"</script>
   </head>
   <body>
-    <template
-      is="e-wrapper"
-      data-src="/html/main-page-template.html"
-      data-where-to-place="main"
-      data-how-to-place="inside">
-      hi
-    </template>
+
+    <header>
+      <a href="/">
+        <img id="logo" alt="Logo" src="/image/logo.svg" />
+      </a>
+
+      <nav>
+        <a href="#links">Links</a>
+        <a href="/html/documentation.html">Documentation</a>
+        <a href="#examples">Examples</a>
+      </nav>
+    </header>
+
+    <main>
+      <section>
+        <h1>Main Concepts</h1>
+        <p>
+          S-Style is a CSS architecture built on the idea that clarity comes from
+          structure—not from endless utility classes. Instead of decorating your HTML
+          with styling tokens, your layout emerges naturally from the <strong>relationship of elements</strong>.
+        </p>
+        <p>
+          Core principles:
+        </p>
+        <ul>
+          <li>
+            <p>No CSS classes — all styling is semantic and element-driven.</p>
+          </li>
+          <li>
+            <p>Layouts depend entirely on <strong>element relationships</strong>.</p>
+          </li>
+          <li>
+            <p>Custom elements like <code>&lt;s-row&gt;</code> and <code>&lt;s-column&gt;</code> define structure.</p>
+          </li>
+          <li>
+            <p>Typography is fully automatic with consistent spacing rules.</p>
+          </li>
+          <li>
+            <p>Tables, tooltips, modals, lists, and forms follow unified defaults.</p>
+          </li>
+          <li>
+            <p>Themes are configured through CSS variables — switchable instantly via JS.</p>
+          </li>
+          <li>
+            <p>Mobile and tablet layouts adapt through variables, not class rewrites.</p>
+          </li>
+        </ul>
+        <h2>Philosophy</h2>
+        <p>
+          The browser already knows how to render text, flow content, and adapt layouts.
+          Traditional CSS frameworks interfere with this natural flow by layering abstractions:
+          grids, utilities, reset packages, spacing units, breakpoints, and custom components.
+        </p>
+        <p>
+          <strong>S-Style does the opposite.</strong><br>
+          It accepts the browser for what it is and enhances it in small, powerful ways:
+        </p>
+        <ol>
+          <li>Beautiful typography by default.</li>
+          <li>Layout primitives that match how humans think — row, column, scrollable.</li>
+          <li>Readable components without classes.</li>
+          <li>Automatic responsiveness via tokens, not manual CSS rewrites.</li>
+        </ol>
+        <s-row>
+          <button onclick="sStyle.applyTheme('neutral')">Neutral Theme</button>
+          <button onclick="sStyle.applyTheme('tbilisi')">Tbilisi Theme</button>
+          <button onclick="sStyle.applyTheme('tokyo')">Tokyo Theme</button>
+          <button onclick="sStyle.applyTheme('paris')">Paris Theme</button>
+          <button onclick="sStyle.applyTheme('london')">London Theme</button>
+          <button onclick="sStyle.applyTheme('berlin')">Berlin Theme</button>
+          <button onclick="sStyle.applyTheme('seoul')">Seoul Theme</button>
+          <button onclick="sStyle.applyTheme('san-francisco')">San Francisco Theme</button>
+          <button onclick="sStyle.applyTheme('rome')">Rome Theme</button>
+          <button onclick="sStyle.applyTheme('dubai')">Dubai Theme</button>
+          <button onclick="sStyle.applyTheme('sydney')">Sydney Theme</button>
+          <button onclick="sStyle.applyTheme('buenos-aires')">Buenos Aires Theme</button>
+          <button onclick="sStyle.applyTheme('reykjavik')">Reykjavik Theme</button>
+          <button onclick="sStyle.applyTheme('amsterdam')">Amsterdam Theme</button>
+          <s-tooltip data-tip="Try changing the theme!">
+            <button>Hover Tip</button>
+          </s-tooltip>
+        </s-row>
+      </section>
+
+      <section id="newsletter">
+        <h1>Newsletter</h1>
+        <p>
+          Stay updated. This block is intentionally left empty. You can later
+          plug in an email capturing system, form element, or integration.
+        </p>
+
+        <!-- Example of s-modal invocation -->
+        <button onclick="document.querySelector('#newsletter-modal').setAttribute('open', '')">
+          Open Modal Example
+        </button>
+
+        <s-modal id="newsletter-modal">
+          <div>
+            <h2>Modal Example</h2>
+            <p>This modal uses the <code>&lt;s-modal&gt;</code> custom element styled by S-Style.</p>
+            <button onclick="document.querySelector('#newsletter-modal').removeAttribute('open')">Close</button>
+          </div>
+        </s-modal>
+      </section>
+
+    </main>
+
+    <footer>
+      Created by Guseyn
+    </footer>
   </body>
 </html>

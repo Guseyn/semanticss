@@ -1,27 +1,28 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import unwrappedChildrenOfParent from '#ehtml/unwrappedChildrenOfParent.js'
-import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js'
-import evaluateStringWithActionsOnProgress from '#ehtml/evaluateStringWithActionsOnProgress.js'
-import scrollToHash from '#ehtml/actions/scrollToHash.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import unwrappedChildrenOfParent from '#ehtml/unwrappedChildrenOfParent.js?v=98b3528d'
+import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js?v=b4193065'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=01fa3e7e'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
+import evaluateActionsOnProgress from '#ehtml/evaluateActionsOnProgress.js?v=c7f83d7b'
+import scrollToHash from '#ehtml/actions/scrollToHash.js?v=e7d61ab5'
 import prettyHtml from '#ehtml/third-party/json-pretty-html.js?v=acd8d719'
 
 export default class EJsonView extends HTMLElement {
 
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 
@@ -29,9 +30,10 @@ export default class EJsonView extends HTMLElement {
     const state = getNodeScopedState(this)
 
     if (this.hasAttribute('data-actions-on-progress-start')) {
-      evaluateStringWithActionsOnProgress(
+      evaluateActionsOnProgress(
         this.getAttribute('data-actions-on-progress-start'),
-        this
+        this,
+        state
       )
     }
 
@@ -45,12 +47,10 @@ export default class EJsonView extends HTMLElement {
       this
     )
 
-    const headers = JSON.parse(
-      evaluatedStringWithParamsFromState(
-        this.getAttribute('data-headers') || '{}',
-        state,
-        this
-      )
+    const headers = evaluatedValueWithParamsFromState(
+      this.getAttribute('data-headers') || '{}',
+      state,
+      this
     )
 
     responseFromAjaxRequest(
@@ -75,9 +75,10 @@ export default class EJsonView extends HTMLElement {
         unwrappedChildrenOfParent(this)
 
         if (this.hasAttribute('data-actions-on-progress-end')) {
-          evaluateStringWithActionsOnProgress(
+          evaluateActionsOnProgress(
             this.getAttribute('data-actions-on-progress-end'),
-            this
+            this,
+            state
           )
         }
 

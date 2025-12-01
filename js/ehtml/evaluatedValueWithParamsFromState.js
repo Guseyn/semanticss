@@ -18,11 +18,13 @@ export default function evaluatedValueWithParamsFromState(expression, state, nod
   const cleaned = inner.replace(/\n/g, ' ')
 
   // Evaluate
-  const func = new Function('state', 'thisElement', `
-    with (state) {
-      return (${cleaned});
-    }
-  `)
-
-  return func(state, node)
+  const func = new Function(
+    'state',
+    `
+      with (state) {
+        return (${cleaned});
+      }
+    `
+  )
+  return func.apply(node, [state])
 }

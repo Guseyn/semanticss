@@ -1,22 +1,22 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import setNodeScopedState from '#ehtml/setNodeScopedState.js'
-import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import setNodeScopedState from '#ehtml/setNodeScopedState.js?v=7806d68f'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=a8e84941'
 
 export default class EForEachTemplate extends HTMLTemplateElement {
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 

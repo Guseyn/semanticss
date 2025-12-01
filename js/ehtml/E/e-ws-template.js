@@ -1,35 +1,34 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js'
-import evaluateStringWithActionsOnProgress from '#ehtml/evaluateStringWithActionsOnProgress.js'
-import evaluateStringWithActionsOnOpenConnection from '#ehtml/evaluateStringWithActionsOnOpenConnection.js?v=4f2d2e81'
-import evaluateStringWithActionsOnCloseConnection from '#ehtml/evaluateStringWithActionsOnCloseConnection.js?v=85da1111'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
+import evaluateActionsOnProgress from '#ehtml/evaluateActionsOnProgress.js?v=c7f83d7b'
+import evaluateActionsOnOpenConnection from '#ehtml/evaluateActionsOnOpenConnection.js?v=4f2d2e81'
+import evaluateActionsOnCloseConnection from '#ehtml/evaluateActionsOnCloseConnection.js?v=85da1111'
 
 export default class EWs extends HTMLTemplateElement {
-
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
     this.addEventListener(
       'ehtml:activated',
-      this.onActivated
+      this.onEHTMLActivated
     )
   }
 
   disconnectedCallback() {
     this.removeEventListener(
       'ehtml:activated',
-      this.onActivated
+      this.onEHTMLActivated
     )
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 
@@ -68,15 +67,16 @@ export default class EWs extends HTMLTemplateElement {
     const socket = new WebSocket(socketUrl)
 
     // global EHTML storage
-    window.__ehtmlWebSockets__ =
-      window.__ehtmlWebSockets__ || {}
+    window.__EHTML_WEB_SOCKETS__ =
+      window.__EHTML_WEB_SOCKETS__ || {}
 
-    window.__ehtmlWebSockets__[socketName] = socket
+    window.__EHTML_WEB_SOCKETS__[socketName] = socket
 
     if (this.hasAttribute('data-actions-on-progress-start')) {
-      evaluateStringWithActionsOnProgress(
+      evaluateActionsOnProgress(
         this.getAttribute('data-actions-on-progress-start'),
-        this
+        this,
+        state
       )
     }
 
@@ -86,10 +86,11 @@ export default class EWs extends HTMLTemplateElement {
       }
 
       if (this.hasAttribute('data-actions-on-open-connection')) {
-        evaluateStringWithActionsOnOpenConnection(
+        evaluateActionsOnOpenConnection(
           this.getAttribute('data-actions-on-open-connection'),
           event,
-          this
+          this,
+          state
         )
       }
 
@@ -100,19 +101,21 @@ export default class EWs extends HTMLTemplateElement {
       )
 
       if (this.hasAttribute('data-actions-on-progress-end')) {
-        evaluateStringWithActionsOnProgress(
+        evaluateActionsOnProgress(
           this.getAttribute('data-actions-on-progress-end'),
-          this
+          this,
+          state
         )
       }
     })
 
     socket.addEventListener('close', event => {
       if (this.hasAttribute('data-actions-on-close-connection')) {
-        evaluateStringWithActionsOnCloseConnection(
+        evaluateActionsOnCloseConnection(
           this.getAttribute('data-actions-on-close-connection'),
           event,
-          this
+          this,
+          state
         )
       }
     })

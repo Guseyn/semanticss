@@ -1,21 +1,21 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=e2d7e253'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
 
 export default class EFormDynamicValue extends HTMLElement {
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 

@@ -1,4 +1,4 @@
-import setNodeScopedState from '#ehtml/setNodeScopedState.js?v=2bfdae8d'
+import setNodeScopedState from '#ehtml/setNodeScopedState.js?v=7806d68f'
 
 export default function templateTriggerEventListener(template, state) {
   const contentNode = template.content.cloneNode(true)

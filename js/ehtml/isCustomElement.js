@@ -26,7 +26,8 @@
  *  Notes:
  *    • This function does *not* check activation state; it only determines
  *      whether an element *represents* an EHTML custom element type.
- *
+ *    • Works reliably even on browsers that refuse to upgrade customized
+ *      built-ins (notably iOS Safari).
  * ════════════════════════════════════════════════════════════════════════ */
 export default function isCustomElement(el) {
   /*

@@ -1,29 +1,29 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js'
-import unwrappedChildrenOfParent from '#ehtml/unwrappedChildrenOfParent.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js'
-import evaluateStringWithActionsOnProgress from '#ehtml/evaluateStringWithActionsOnProgress.js'
-import scrollToHash from '#ehtml/actions/scrollToHash.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js?v=b4193065'
+import unwrappedChildrenOfParent from '#ehtml/unwrappedChildrenOfParent.js?v=98b3528d'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=01fa3e7e'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
+import evaluateActionsOnProgress from '#ehtml/evaluateActionsOnProgress.js?v=c7f83d7b'
+import scrollToHash from '#ehtml/actions/scrollToHash.js?v=e7d61ab5'
 import * as showdown from '#ehtml/third-party/showdown.min.js?v=8e1f0558'
-import showdownHighlight from '#ehtml/third-party/showdown-highlight.js?v=8c2f2982'
+import showdownHighlight from '#ehtml/third-party/showdown-highlight.js?v=41419cd4'
 import showdownKatex from '#ehtml/third-party/showdown-katex/showdown-katex.js?v=088647e7'
 
 export default class EMarkdown extends HTMLElement {
-
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 
@@ -32,9 +32,10 @@ export default class EMarkdown extends HTMLElement {
 
     // --- Progress start ---
     if (this.hasAttribute('data-actions-on-progress-start')) {
-      evaluateStringWithActionsOnProgress(
+      evaluateActionsOnProgress(
         this.getAttribute('data-actions-on-progress-start'),
-        this
+        this,
+        state
       )
     }
 
@@ -43,7 +44,7 @@ export default class EMarkdown extends HTMLElement {
     }
 
     // --- Resolve showdown extensions (global registry) ---
-    const extensions = window.__ehtmlShowdownExtensions__ || []
+    const extensions = window.__EHTML_SHOWDOWN_EXTENSIONS__ || []
 
     // Code highlighting extension
     if (this.hasAttribute('data-apply-code-highlighting') && showdownHighlight) {
@@ -79,12 +80,10 @@ export default class EMarkdown extends HTMLElement {
       )
     )
 
-    const headers = JSON.parse(
-      evaluatedStringWithParamsFromState(
-        this.getAttribute('data-headers') || '{}',
-        state,
-        this
-      )
+    const headers = evaluatedValueWithParamsFromState(
+      this.getAttribute('data-headers') || '${{}}',
+      state,
+      this
     )
 
     responseFromAjaxRequest(
@@ -123,9 +122,10 @@ export default class EMarkdown extends HTMLElement {
 
         // --- Progress end ---
         if (this.hasAttribute('data-actions-on-progress-end')) {
-          evaluateStringWithActionsOnProgress(
+          evaluateActionsOnProgress(
             this.getAttribute('data-actions-on-progress-end'),
-            this
+            this,
+            state
           )
         }
 

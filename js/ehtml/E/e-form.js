@@ -1,7 +1,9 @@
-import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js?v=4d85ec20'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=e2d7e253'
-import evaluateStringWithActionsOnProgress from '#ehtml/evaluateStringWithActionsOnProgress.js?v=c20d640c'
-import evaluateStringWithActionsOnResponse from '#ehtml/evaluateStringWithActionsOnResponse.js?v=2edf1120'
+import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js?v=b4193065'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=01fa3e7e'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
+import evaluateActionsOnProgress from '#ehtml/evaluateActionsOnProgress.js?v=c7f83d7b'
+import evaluateActionsOnResponse from '#ehtml/evaluateActionsOnResponse.js?v=1ff0631a'
 
 const VALIDATION_PATTERNS = {
   date: /\d\d\d\d-\d\d-\d\d/,
@@ -19,18 +21,18 @@ const VALIDATION_PATTERNS = {
 export default class EForm extends HTMLFormElement {
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 
@@ -49,7 +51,9 @@ function initializeForm(form) {
       event.stopPropagation()
 
       const closestForm = event.target.closest('form')
-      if (form !== closestForm) return false
+      if (form !== closestForm) {
+        return false
+      }
 
       const firstElmWithRequestUrl =
         closestForm.querySelector('[data-request-url]')
@@ -60,7 +64,7 @@ function initializeForm(form) {
       if (firstElmWithRequestUrl.closest('form') !== form) {
         return false
       }
-      if (firstElmWithRequestUrl.hasAttribute('data-do-not-trigger-on-enter')) {
+      if (form.hasAttribute('data-do-not-trigger-on-enter')) {
         return false
       }
 
@@ -371,13 +375,15 @@ function submit (target, targetIsForm) {
 
   form.isValid = false
 
+  const state = getNodeScopedState(target)
+
   if (isFormValid(form, validations)) {
     form.isValid = true
     if (socketName) {
-      if (!window.__ehtmlWebSockets__ || !window.__ehtmlWebSockets__[socketName]) {
+      if (!window.__EHTML_WEB_SOCKETS__ || !window.__EHTML_WEB_SOCKETS__[socketName]) {
         throw new Error(`socket with name "${socketName}" is not defined or not open yet`)
       }
-      const socket = window.__ehtmlWebSockets__[socketName]
+      const socket = window.__EHTML_WEB_SOCKETS__[socketName]
       if (socket.readyState === WebSocket.OPEN) {
         const message = JSON.stringify(requestBody)
         socket.send(message)
@@ -404,7 +410,7 @@ function submit (target, targetIsForm) {
       if (target.originalInnerText) {
         target.innerText = target.originalInnerText
       }
-      evaluateStringWithActionsOnResponse(
+      evaluateActionsOnResponse(
         target.getAttribute('data-actions-on-response'),
         target.getAttribute('data-response-name'),
         {
@@ -415,7 +421,8 @@ function submit (target, targetIsForm) {
             ':status': 200
           }
         },
-        target
+        target,
+        state
       )
       return
     }
@@ -429,9 +436,10 @@ function submit (target, targetIsForm) {
     const progressBar = document.querySelector(progressBarSelector)
 
     if (target.hasAttribute('data-actions-on-progress')) {
-      evaluateStringWithActionsOnProgress(
+      evaluateActionsOnProgress(
         target.getAttribute('data-actions-on-progress'),
-        target
+        target,
+        state
       )
     }
 
@@ -439,17 +447,15 @@ function submit (target, targetIsForm) {
       url: urlWithQueryParams(
         evaluatedStringWithParamsFromState(
           target.getAttribute('data-request-url'),
-          target.__ehtmlState__,
+          state,
           target
         ),
         queryObject
       ),
-      headers: JSON.parse(
-        evaluatedStringWithParamsFromState(
-          target.getAttribute('data-request-headers'),
-          target.__ehtmlState__,
-          target
-        ) || '{}'
+      headers: evaluatedValueWithParamsFromState(
+        target.getAttribute('data-request-headers') || '${{}}',
+        state,
+        target
       ),
       method: target.getAttribute('data-request-method') || 'POST',
       uploadProgressEvent: (event) => {
@@ -498,7 +504,7 @@ function submit (target, targetIsForm) {
       const responseBodyAsObject = JSON.parse(
         responseBodyAsBuffer.toString('utf-8', 0, responseBodyAsBuffer.length)
       )
-      evaluateStringWithActionsOnResponse(
+      evaluateActionsOnResponse(
         target.getAttribute('data-actions-on-response'),
         target.getAttribute('data-response-name'),
         {
@@ -506,7 +512,8 @@ function submit (target, targetIsForm) {
           statusCode: resObj.statusCode,
           headers: resObj.headers
         },
-        target
+        target,
+        state
       )
     })
   } else {

@@ -1,21 +1,21 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=01fa3e7e'
 
 export default class EIfTemplate extends HTMLTemplateElement {
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
   connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
 
     this.run()
   }
@@ -30,13 +30,13 @@ export default class EIfTemplate extends HTMLTemplateElement {
     const state = getNodeScopedState(this)
 
     // 2. Evaluate the list expression (JSON string)
-    const evaluated = evaluatedStringWithParamsFromState(
+    const evaluated = evaluatedValueWithParamsFromState(
       expr.replace(/\n/g, ' '),
       state,
       this
     )
 
-    const show = evaluated === 'true'
+    const show = evaluated === true || evaluated === 'true'
 
     if (show) {
       this.insertContent()

@@ -1,27 +1,27 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
-import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js'
-import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js'
-import evaluateStringWithActionsOnProgress from '#ehtml/evaluateStringWithActionsOnProgress.js'
-import evaluateStringWithActionsOnResponse from '#ehtml/evaluateStringWithActionsOnResponse.js?v=1ff0631a'
-import unwrappedChildrenOfParent from '#ehtml/unwrappedChildrenOfParent.js'
-import scrollToHash from '#ehtml/actions/scrollToHash.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
+import responseFromAjaxRequest from '#ehtml/responseFromAjaxRequest.js?v=b4193065'
+import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=01fa3e7e'
+import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
+import evaluateActionsOnProgress from '#ehtml/evaluateActionsOnProgress.js?v=c7f83d7b'
+import evaluateActionsOnResponse from '#ehtml/evaluateActionsOnResponse.js?v=1ff0631a'
+import unwrappedChildrenOfParent from '#ehtml/unwrappedChildrenOfParent.js?v=98b3528d'
+import scrollToHash from '#ehtml/actions/scrollToHash.js?v=e7d61ab5'
 
 export default class EJson extends HTMLElement {
-
   constructor() {
     super()
-    this.activated = false
+    this.ehtmlActivated = false
   }
 
-  connectedCallback() {
-    this.addEventListener('ehtml:activated', this.onActivated, { once: true })
+  connectedCallback() {    
+    this.addEventListener('ehtml:activated', this.onEHTMLActivated, { once: true })
   }
 
-  onActivated() {
-    if (this.activated) {
+  onEHTMLActivated() {
+    if (this.ehtmlActivated) {
       return
     }
-    this.activated = true
+    this.ehtmlActivated = true
     this.run()
   }
 
@@ -43,6 +43,7 @@ export default class EJson extends HTMLElement {
   }
 
   runSocketMode() {
+    const state = getNodeScopedState(this)
     const ajaxIcon = this.resolveIcon()
     if (ajaxIcon) {
       ajaxIcon.style.display = ''
@@ -50,7 +51,7 @@ export default class EJson extends HTMLElement {
 
     const socketName = this.getAttribute('data-socket')
 
-    const sockets = window.__ehtmlWebSockets__
+    const sockets = window.__EHTML_WEB_SOCKETS__
     if (!sockets || !sockets[socketName]) {
       throw new Error(`socket "${socketName}" is not defined or not opened yet`)
     }
@@ -59,11 +60,12 @@ export default class EJson extends HTMLElement {
 
     socket.addEventListener('message', event => {
       const response = JSON.parse(event.data)
-      evaluateStringWithActionsOnResponse(
+      evaluateActionsOnResponse(
         this.getAttribute('data-actions-on-response'),
         this.getAttribute('data-response-name'),
         response,
-        this
+        this,
+        state
       )
     })
 
@@ -74,7 +76,7 @@ export default class EJson extends HTMLElement {
     const state = getNodeScopedState(this)
     const cacheAttr = this.getAttribute('data-cache-from')
 
-    const evaluated = evaluatedStringWithParamsFromState(
+    const evaluated = evaluatedValueWithParamsFromState(
       cacheAttr,
       state,
       this
@@ -84,22 +86,18 @@ export default class EJson extends HTMLElement {
       return false
     }
 
-    let obj = null
-    try {
-      obj = JSON.parse(evaluated)
-    } catch {
-      return false
-    }
+    const obj = evaluated
 
     if (!obj) {
       return false
     }
 
-    evaluateStringWithActionsOnResponse(
+    evaluateActionsOnResponse(
       this.getAttribute('data-actions-on-response'),
       this.getAttribute('data-response-name'),
       obj,
-      this
+      this,
+      state
     )
 
     unwrappedChildrenOfParent(this)
@@ -129,9 +127,10 @@ export default class EJson extends HTMLElement {
     }
 
     if (this.hasAttribute('data-actions-on-progress-start')) {
-      evaluateStringWithActionsOnProgress(
+      evaluateActionsOnProgress(
         this.getAttribute('data-actions-on-progress-start'),
-        this
+        this,
+        state
       )
     }
 
@@ -139,12 +138,10 @@ export default class EJson extends HTMLElement {
       evaluatedStringWithParamsFromState(src, state, this)
     )
 
-    const headers = JSON.parse(
-      evaluatedStringWithParamsFromState(
-        this.getAttribute('data-request-headers') || '{}',
-        state,
-        this
-      )
+    const headers = evaluatedValueWithParamsFromState(
+      this.getAttribute('data-request-headers') || '${{}}',
+      state,
+      this
     )
 
     responseFromAjaxRequest(
@@ -184,19 +181,21 @@ export default class EJson extends HTMLElement {
           headers: resObj.headers
         }
 
-        evaluateStringWithActionsOnResponse(
+        evaluateActionsOnResponse(
           this.getAttribute('data-actions-on-response'),
           this.getAttribute('data-response-name'),
           responsePayload,
-          this
+          this,
+          state
         )
 
         unwrappedChildrenOfParent(this)
 
         if (this.hasAttribute('data-actions-on-progress-end')) {
-          evaluateStringWithActionsOnProgress(
+          evaluateActionsOnProgress(
             this.getAttribute('data-actions-on-progress-end'),
-            this
+            this,
+            state
           )
         }
 

@@ -1,197 +1,172 @@
 /* =====================================================================
- * EHTML — Core Runtime Architecture
+ *                   EHTML — Core Runtime Architecture
  * =====================================================================
  *
- * This file wires together the foundational mechanics of EHTML:
+ * This file connects the three parts of the EHTML engine:
  *
- *   1.  Custom Element Definitions
- *   2.  The Activation Pipeline (activateNode)
- *   3.  The Global Mutation Observer
+ *   1. Custom Element Definitions  
+ *   2. The Activation Pipeline (activateNode)  
+ *   3. The Global Mutation Observer  
  *
- * These three systems form the “runtime loop” that enables EHTML to
- * transform plain HTML into an active, reactive application layer
- * without a framework, without a build step, and without a virtual DOM.
+ * Together they form the loop that turns plain HTML into a live,
+ * declarative UI without frameworks, a virtual DOM, or a build step.
  *
  * ---------------------------------------------------------------------
  * 1. Custom Element Definitions
  * ---------------------------------------------------------------------
- * `defineEhtmlElements()` registers all built-in EHTML components:
- *   - <e-json>
- *   - <e-html>
- *   - <e-svg>
- *   - <template is="e-if">
- *   - <template is="e-for-each">
- *   - <template is="e-wrapper">
- *   - <template is="e-reusable">
- *   - and others...
- *
- * These elements do not run anything upon registration. They become
- * active only when the activation pipeline dispatches the
- * `ehtml:activated` lifecycle event onto them.
- *
+ * All built-in EHTML components (<e-json>, <e-if>, <e-for-each>, etc.)
+ * are registered up front. They remain inert until the engine dispatches
+ * the synthetic `"ehtml:activated"` lifecycle event onto them.
  *
  * ---------------------------------------------------------------------
- * 2. The Activation Pipeline (activateNode)
+ * 2. Activation Pipeline (activateNode)
  * ---------------------------------------------------------------------
- * Every node entering the DOM—whether from server-rendered HTML,
- * templates inserted via AJAX, `e-for-each` loops, wrapper injections,
- * or manual DOM operations—must pass through `activateNode(node)`.
+ * Every node that enters the DOM goes through activation. This handles:
  *
- * Activation performs three duties:
+ *   • evaluating `${...}` expressions with scoped state  
+ *   • dispatching `"ehtml:activated"` to custom elements  
+ *   • wiring template triggers for mapToTemplate()  
  *
- *   (A) Attribute Evaluation
- *       ---------------------------------------------------------------
- *       EHTML processes only attributes containing `${...}` template
- *       expressions. The evaluation is *scope-aware*: each node has a
- *       state map (WeakMap-based) that carries:
- *         - loop variables
- *         - object mappings from <e-json>
- *         - template parameters
- *       Attributes are resolved immediately and one time per insertion.
- *
- *   (B) Custom Element Lifecycle
- *       ---------------------------------------------------------------
- *       Custom elements do not automatically “run” when they appear.
- *       Instead, activation dispatches:
- *
- *           node.dispatchEvent(new CustomEvent("ehtml:activated"))
- *
- *       This isolates side-effects to the correct moment and avoids the
- *       unpredictability of native connectedCallback timing.
- *
- *   (C) Template Trigger Wiring
- *       ---------------------------------------------------------------
- *       Native <template> elements (without `is="..."`) receive an
- *       event listener for `ehtml:template-triggered`. This is how
- *       mapToTemplate() communicates with templates. The template
- *       becomes a one-shot renderer unless it's <template is="e-reusable">.
- *
- * Only after all three steps complete does activation proceed recursively
- * to child nodes. This ensures top-down scoping and deterministic order.
- *
+ * Activation is recursive and always runs top-down.
  *
  * ---------------------------------------------------------------------
- * 3. The Mutation Observer
+ * 3. Mutation Observer
  * ---------------------------------------------------------------------
- * EHTML does not patch the DOM or run a diffing algorithm. Instead, the
- * browser’s own DOM mutation notifications are used to pick up new
- * content.
- *
- * The observer listens **only** for:
- *
- *     - addedNodes in mutation.type === "childList"
- *
- * Attribute mutations are intentionally ignored:
- *
- *   • All attribute-based expression evaluation is handled inside
- *     `processAttributes()` during activation.
- *
- *   • Built-in custom elements handle their own attribute reactions.
- *
- * This keeps the observer minimal, predictable, and focused solely on
- * structural changes—exactly the subset of DOM mutations that represent
- * new dynamic content entering the document.
- *
+ * EHTML listens only for new DOM nodes (`childList` mutations).  
+ * When a node is inserted, it is passed through the activation pipeline.
+ * Attribute changes are ignored — they are evaluated only once on insert.
  *
  * ---------------------------------------------------------------------
  * 4. Initial Activation
  * ---------------------------------------------------------------------
- * On page load:
- *
- *     activateNode(document.body)
- *     turnEhtmlObserverOn()
- *
- * The first call activates the static HTML delivered by the server.
- * From that point forward, all dynamic DOM insertions are captured by
- * the observer and funneled through the same activation pipeline.
- *
+ * On page load, the engine activates `<body>` once and then enables the
+ * MutationObserver. All subsequent DOM updates flow through the same,
+ * unified activation path.
  *
  * ---------------------------------------------------------------------
  * Summary
  * ---------------------------------------------------------------------
- * EHTML operates on four principles:
+ * EHTML’s model is simple:
  *
- *   - HTML is the source of truth. The DOM *is* the component model.
- *   - Attribute expressions are evaluated once, deterministically.
- *   - Custom elements activate late, through an explicit event, not
- *     through native timing.
- *   - All new DOM content passes through one, unified activation flow.
+ *   • HTML is the component system  
+ *   • Expressions are evaluated once  
+ *   • Custom elements activate via explicit events  
+ *   • All dynamic DOM passes through a single activation pipeline  
  *
- * This architecture avoids reactivity frameworks, avoids virtual DOM
- * diffing, and avoids build steps. The browser does the rendering;
- * EHTML handles only the wiring, scoping, and execution semantics.
+ * The browser does the rendering; EHTML handles only the wiring.
  *
  * =====================================================================
  */
 
-import activateNode from '#ehtml/activateNode.js?v=483faacf'
-
-/* --------------------------------------------------------------------
- * WeakMap storing scoped state for specific DOM nodes.
- *
- * Each node may define its own scope (e.g. data passed into templates,
- * loop variables inside <template is="e-for-each">, JSON returned from
- * <e-json>, etc). getNodeScopedState(node) climbs the DOM upward until
- * it finds the closest ancestor with a stored scope.
- *
- * Complexity:
- *   - WeakMap lookup: O(1)
- *   - DOM tree climb: O(h) (h = depth)
- *
- * Benefits:
- *   - Automatic garbage collection when nodes are removed.
- *   - No global memory growth.
- *   - Nested scopes behave like lexical scopes in templating languages.
- * -------------------------------------------------------------------- */
-window.__ehtmlScopedState__ = new WeakMap()
-
-/* --------------------------------------------------------------------
- * Global registry of open WebSocket instances used by <e-json data-socket>.
- *
- * EHTML never hides WebSocket objects in opaque framework internals —
- * everything is accessible to user code. This array simply indexes
- * sockets by name so <e-json> can reuse existing live connections.
- * -------------------------------------------------------------------- */
-window.__ehtmlWebSockets__ = window.__ehtmlWebSockets__ || []
-
-/* --------------------------------------------------------------------
- * Registry of Showdown (Markdown) extensions.
- *
- * <e-markdown> loads extensions from here. Storing them globally allows
- * the developer to register extensions once and reuse them across all
- * markdown rendering operations in the page.
- * -------------------------------------------------------------------- */
-window.__ehtmlShowdownExtensions__ = window.__ehtmlShowdownExtensions__ || []
 
 /* ════════════════════════════════════════════════════════════════════════
- *                             EHTML ELEMENTS
+ *              CUSTOM ELEMENTS POLYFILL (CROSS-BROWSER SUPPORT)
  * ════════════════════════════════════════════════════════════════════════
  *
- * This module imports and exposes all **core EHTML custom elements**.
- * These are HTML-native building blocks that extend browser behavior
- * without any frameworks, bundlers, or virtual DOM.
+ * Some browsers—especially iOS Safari—fail to upgrade customized built-in
+ * elements like <template is="e-for-each">, causing lifecycle callbacks and
+ * activation logic to never run. This polyfill restores consistent Custom
+ * Elements behavior across all environments so EHTML’s template components
+ * initialize and activate reliably on every platform.
  *
- * Examples include:
- *   • <e-html>                  – dynamic HTML loader
- *   • <e-wrapper>               – wrapper template with placement rules
- *   • <e-page-with-url>         – URL-aware page template
- *   • <e-json>, <e-json-view>   – JSON fetchers and renderers
- *   • <e-if>, <e-for-each>      – declarative conditionals and loops
- *   • <e-form>, <e-form-array>, <e-form-object> – reactive form helpers
- *   • <e-local-storage-value>, <e-session-storage-value>
- *   • <e-reusable>              – reusable template instances
- *   • <e-markdown>              – markdown → HTML renderer
- *   • <e-select>, <e-svg>, <e-ws> – UI and data streaming helpers
- *
- * When these elements appear in the DOM, the EHTML runtime activates them
- * via the MutationObserver and the internal `ehtml:activated` event.  
- * Each element implements its own behavior (loading, binding, mapping,
- * templating, rendering, form handling, etc.), entirely declaratively.
- *
- * Exporting them together allows the EHTML engine to register and manage
- * all built-in elements in one place.
  * ════════════════════════════════════════════════════════════════════════ */
-import '#ehtml/E/exports.js?v=499f5b08'
+import '#ehtml/third-party/custom-elements-polyfill.js'
+
+/* ════════════════════════════════════════════════════════════════════════
+ *                               ACTIVATE NODE
+ * ════════════════════════════════════════════════════════════════════════
+ *
+ * `activateNode` is the entry point for EHTML’s manual activation flow.  
+ * Whenever a node enters the DOM—whether created by templates, loops,
+ * <e-json>, or user scripts—this function prepares it for EHTML behavior.
+ *
+ * Activation performs three jobs:
+ *
+ *   • evaluate `${...}` expressions using the correct scoped state  
+ *   • dispatch the `"ehtml:activated"` event so components can run their logic  
+ *   • attach `"ehtml:template-triggered"` to native <template> elements
+ *       (those without `is="..."`) so mapToTemplate() can release them  
+ *
+ * EHTML uses an explicit event-based activation model not as a workaround,
+ * but by design: dispatching `"ehtml:activated"` decouples component behavior
+ * from native Custom Element lifecycles and allows any node—custom element or
+ * plain HTML—to opt into EHTML's initialization in a flexible, uniform way.
+ *
+ * This guarantees predictable, platform-independent behavior and keeps the
+ * declaration of components completely open and extensible.
+ *
+ * ════════════════════════════════════════════════════════════════════════ */
+import activateNode from '#ehtml/activateNode.js?v=6a20044a'
+
+/* ════════════════════════════════════════════════════════════════════════
+ *                       EHTML NODE-SCOPED STATE MAP
+ * ════════════════════════════════════════════════════════════════════════
+ *
+ * This WeakMap stores the **scoped state** for DOM nodes. Templates,
+ * loops, <e-json>, and other EHTML components place their local data here.
+ *
+ * `getNodeScopedState(node)` walks up the DOM to inherit the nearest
+ * parent scope, giving EHTML a simple lexical-style state model directly
+ * in the DOM tree.
+ *
+ * WeakMap storage ensures automatic cleanup when nodes are removed and
+ * keeps scoped state predictable, lightweight, and composable.
+ *
+ * Exposed globally as `__EHTML_SCOPED_STATE__` for use across all EHTML
+ * internals.
+ *
+ * ════════════════════════════════════════════════════════════════════════ */
+window.__EHTML_SCOPED_STATE__ = new WeakMap()
+
+/* ════════════════════════════════════════════════════════════════════════
+ *                      EHTML WEBSOCKET CONNECTION REGISTRY
+ * ════════════════════════════════════════════════════════════════════════
+ *
+ * This array stores all active WebSocket instances used by components like
+ * `<e-json data-socket="...">`. Sockets are indexed by name so multiple
+ * elements can share the same connection instead of reopening new ones.
+ *
+ * The registry is global by design—connections stay visible and reusable,
+ * avoiding redundant WebSockets and enabling efficient real-time updates.
+ *
+ * ════════════════════════════════════════════════════════════════════════ */
+window.__EHTML_WEB_SOCKETS__ = window.__EHTML_WEB_SOCKETS__ || [];
+
+/* ════════════════════════════════════════════════════════════════════════
+ *                    EHTML MARKDOWN EXTENSION REGISTRY
+ * ════════════════════════════════════════════════════════════════════════
+ *
+ * This array stores all **Showdown (Markdown) extensions** registered for
+ * use by the `<e-markdown>` element. Extensions placed here are picked up
+ * automatically by every markdown-conversion operation performed on the page.
+ *
+ * Benefits:
+ *   • Extensions are defined once and reused globally.
+ *   • Avoids repeated setup inside individual <e-markdown> components.
+ *   • Ensures consistent markdown rendering behavior across the entire app.
+ *
+ * Typical usage:
+ *   window.__EHTML_SHOWDOWN_EXTENSIONS__.push(myCustomMarkdownExtension);
+ *
+ * `<e-markdown>` will read from this registry each time it performs a
+ * markdown → HTML conversion.
+ * ════════════════════════════════════════════════════════════════════════ */
+window.__EHTML_SHOWDOWN_EXTENSIONS__ = window.__EHTML_SHOWDOWN_EXTENSIONS__ || []
+
+/* ════════════════════════════════════════════════════════════════════════
+ *                               EHTML ELEMENTS
+ * ════════════════════════════════════════════════════════════════════════
+ *
+ * This module loads all built-in EHTML custom elements: <e-json>, <e-if>,
+ * <e-for-each>, <e-html>, <e-wrapper>, <e-reusable>, <e-form>, <e-markdown>,
+ * and others. Each element defines its own behavior declaratively and is
+ * activated by the EHTML runtime through `"ehtml:activated"` events.
+ *
+ * Importing this module ensures every EHTML component is registered with
+ * the browser and available for activation.
+ *
+ * ════════════════════════════════════════════════════════════════════════ */
+import '#ehtml/E/exports.js?v=8febe801'
 
 /* ════════════════════════════════════════════════════════════════════════
  *                               EHTML ACTIONS
@@ -220,10 +195,10 @@ import '#ehtml/E/exports.js?v=499f5b08'
  * Importing and exporting them as a single object makes it easy for the
  * EHTML engine to look them up by name and invoke them at runtime.
  * ════════════════════════════════════════════════════════════════════════ */
-import '#ehtml/actions/exports.js?v=650dbb8b'
+import '#ehtml/actions/exports.js?v=de317e5d'
 
 /* ====================================================================
- *  MUTATION OBSERVER CALLBACK
+ *                       MUTATION OBSERVER CALLBACK
  * ====================================================================
  *
  *  After the initial page load, EHTML does NOT walk or diff the entire
@@ -335,7 +310,7 @@ function mutationHandler(mutations) {
 }
 
 /* ====================================================================
- *  CREATE MUTATION OBSERVER INSTANCE
+ *                     CREATE MUTATION OBSERVER INSTANCE
  * ====================================================================
  *
  * We observe:
@@ -373,7 +348,7 @@ export function turnEhtmlObserverOn() {
 }
 
 /* ====================================================================
- *  PUBLIC API — DISABLE OBSERVER
+ *                     PUBLIC API — DISABLE OBSERVER
  * ====================================================================
  *
  *  turnEhtmlObserverOff()
@@ -404,7 +379,7 @@ export function turnEhtmlObserverOff() {
 }
 
 /* ====================================================================
- *  GLOBAL EXPOSURE — ADVANCED CONTROL
+ *                  GLOBAL EXPOSURE — ADVANCED CONTROL
  * ====================================================================
  *
  *  These globals allow applications, debugging tools, and testing
@@ -421,9 +396,8 @@ window.turnEhtmlObserverOn = turnEhtmlObserverOn
 window.turnEhtmlObserverOff = turnEhtmlObserverOff
 window.activateNode = activateNode
 
-
 /* ====================================================================
- *  INITIAL ACTIVATION — BOOTSTRAP PHASE
+ *                   INITIAL ACTIVATION — BOOTSTRAP PHASE
  * ====================================================================
  *
  *  On page load:
@@ -444,7 +418,5 @@ window.activateNode = activateNode
  *      - extremely performant during runtime
  *
  * ==================================================================== */
-window.addEventListener('load', () => {
-  activateNode(document.body)   // one-time full-tree activation
-  turnEhtmlObserverOn()         // incremental activation from now on
-})
+queueMicrotask(() => activateNode(document.body))   // one-time full-tree activation
+turnEhtmlObserverOn()                               // incremental activation from now on

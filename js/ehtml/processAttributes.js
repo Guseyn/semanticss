@@ -1,4 +1,4 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=61afb2f1'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
 import evaluatedValueWithParamsFromState from '#ehtml/evaluatedValueWithParamsFromState.js?v=a8e84941'
 import evaluatedStringWithParamsFromState from '#ehtml/evaluatedStringWithParamsFromState.js?v=01fa3e7e'
 

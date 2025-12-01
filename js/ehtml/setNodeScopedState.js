@@ -1,4 +1,4 @@
-import getNodeScopedState from '#ehtml/getNodeScopedState.js'
+import getNodeScopedState from '#ehtml/getNodeScopedState.js?v=41ab2bfa'
 
 export default function setNodeScopedState(node, state) {
   if (!node || typeof node !== 'object') {
@@ -18,5 +18,5 @@ export default function setNodeScopedState(node, state) {
     canMerge ? { ...inheritedState, ...state } : state
   )
 
-  window.__ehtmlScopedState__.set(node, newState)
+  window.__EHTML_SCOPED_STATE__.set(node, newState)
 }
